@@ -1,0 +1,45 @@
+name: Day bot
+
+# The morning session. GitHub's clock is UTC and ignores daylight saving, so
+# there are two slots; the bot itself checks New York time and the wrong-season
+# slot exits within a minute.
+on:
+  schedule:
+    - cron: "40 13 * * 1-5"   # 9:40 AM New York in summer
+    - cron: "40 14 * * 1-5"   # 9:40 AM New York in winter
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status = check the connection. dry-run = one look now, no orders. run = the real morning session."
+        type: choice
+        default: status
+        options:
+          - status
+          - dry-run
+          - run
+
+concurrency:
+  group: day-bot-morning
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  morning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - name: Day bot
+        env:
+          ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
+          ALPACA_SECRET: ${{ secrets.ALPACA_SECRET }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          MODE: ${{ github.event_name == 'schedule' && 'run' || inputs.mode }}
+        run: |
+          case "$MODE" in
+            status)  python3 bot/day_bot.py status ;;
+            dry-run) python3 bot/day_bot.py run --once --dry-run ;;
+            *)       python3 bot/day_bot.py run ;;
+          esac
