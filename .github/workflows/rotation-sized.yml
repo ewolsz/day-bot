@@ -1,0 +1,59 @@
+name: Sized rotation bot
+
+# The rotation rule with bigger bets on the deepest dips, on the day-bot paper
+# account, for a side-by-side comparison with the original rotation bot.
+# Starts about 25 minutes before the close and waits for the last 12 minutes.
+# Two slots because GitHub's clock ignores daylight saving; the wrong-season
+# slot exits within a minute.
+on:
+  schedule:
+    - cron: "35 19 * * 1-5"   # 3:35 PM New York in summer
+    - cron: "35 20 * * 1-5"   # 3:35 PM New York in winter
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status = check the connection. dry-run = what it would do now, no orders. report = results so far."
+        type: choice
+        default: status
+        options:
+          - status
+          - dry-run
+          - report
+
+concurrency:
+  group: sized-rotation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet httpx
+      - name: Sized rotation bot
+        env:
+          ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
+          ALPACA_SECRET: ${{ secrets.ALPACA_SECRET }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          MODE: ${{ github.event_name == 'schedule' && 'run' || inputs.mode }}
+        run: |
+          PY=.venv/bin/python
+          case "$MODE" in
+            status)
+              $PY bot/rotation_sized_bot.py status | tee status.txt
+              { echo '## Sized rotation bot status'; echo '```'; cat status.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" ;;
+            dry-run)
+              $PY bot/rotation_sized_bot.py run --dry-run --any-time | tee plan.txt
+              { echo '## Sized rotation bot dry run'; echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" ;;
+            report)
+              $PY bot/rotation_sized_bot.py report --out report ;;
+            *)
+              $PY bot/rotation_sized_bot.py run --wait ;;
+          esac
