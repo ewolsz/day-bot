@@ -1,0 +1,20 @@
+{
+  "name": "Dip rotation, bigger bets on the deepest dips only (second sizing attempt)",
+  "written": "2026-11-10, after the first sizing test and before this one was run",
+  "attempt": "2 of 2. It was chosen after seeing the first test's table of results by dip depth, on the same older years. A second try is more likely to pass by luck than a first.",
+  "base_rule": "rules/dip_rotation.json, unchanged: same 12 ETFs, same signal, same exit, same costs, max 3 positions, deepest drop first.",
+  "idea": "Keep the normal size for shallow and medium dips. Bet one and a half units only on dips deeper than 4%. No borrowing: the account is never more than 100% invested.",
+
+  "units": [
+    {"three_day_drop": "shallower than 4%", "size": "one unit (one third of the account, the same as today)"},
+    {"three_day_drop": "deeper than 4%", "size": "one and a half units (half the account)"}
+  ],
+  "tiers": [[-0.04, 1.0], [null, 1.5]],
+
+  "test": "Equal-size and sized versions side by side on the older years only (2000-01-01 to 2014-12-31).",
+  "pass_mark": [
+    "The sized version's yearly percent increase is higher than the equal-size version's.",
+    "The sized version's worst drop is not worse than the equal-size version's."
+  ],
+  "limits": "The newer years (2015 on) were already used to judge the base rule, so they cannot fairly confirm a sizing change. Confirmation would have to come from paper trading forward. No third attempt on these years."
+}
