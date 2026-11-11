@@ -1,0 +1,6 @@
+While this file exists, the day bot sends no orders.
+
+Delete this file to switch the bot on (paper account only).
+Add a file called STOP again to switch it off.
+
+Run the backtest first: Actions > Day bot backtest > Run workflow > explore.
