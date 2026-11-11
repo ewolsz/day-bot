@@ -1,0 +1,37 @@
+name: Day bot backtest
+
+# Tests the bot's rule on years of 5-minute history. Takes 15 to 30 minutes.
+# explore = the older years, run it as often as you like.
+# final   = the locked-away years. Run it ONCE, and only after explore.
+on:
+  workflow_dispatch:
+    inputs:
+      part:
+        description: "explore first. final only once."
+        type: choice
+        default: explore
+        options:
+          - explore
+          - final
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Self-check
+        run: python3 -m unittest discover -s tests
+      - name: Backtest
+        env:
+          ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
+          ALPACA_SECRET: ${{ secrets.ALPACA_SECRET }}
+          PART: ${{ inputs.part }}
+        run: python3 scripts/orb_study.py --$PART --out study
+      - uses: actions/upload-artifact@v4
+        with:
+          name: day-bot-backtest-${{ inputs.part }}
+          path: study/
